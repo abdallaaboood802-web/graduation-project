@@ -27,4 +27,7 @@ COPY . /var/www/html
 RUN composer install --no-interaction --optimize-autoloader --no-dev
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+# تثبيت تعريف MySQL لـ PHP
+RUN docker-php-ext-install pdo_mysql
+
 EXPOSE 80
