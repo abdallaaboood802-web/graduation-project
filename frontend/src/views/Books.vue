@@ -24,9 +24,10 @@ const sizePills = [
 
 // تجهيز الفلاتر لتقرأ من الـ URL مباشرة عند تحميل الصفحة لأول مرة
 const filters = reactive({
+  search: route.query.search || '',
   languages: route.query.languages ? route.query.languages.split(',') : ['ar'],
   categories: route.query.categories ? route.query.categories.split(',').map(Number) : [],
-  fileSize: route.query.file_size || 'lt2',
+  fileSize: route.query.file_size || null,
   minRating: route.query.min_rating ? Number(route.query.min_rating) : null,
   sort: route.query.sort || 'latest'
 })
@@ -36,10 +37,11 @@ async function loadBooks() {
   error.value = null
   try {
     const { data } = await booksApi.list({
+      search: filters.search || undefined,
       languages: filters.languages.join(','),
       categories: filters.categories.join(','),
-      file_size: filters.fileSize,
-      min_rating: filters.minRating,
+      file_size: filters.fileSize || undefined,
+      min_rating: filters.minRating || undefined,
       sort: filters.sort
     })
     books.value = data.data ?? data
@@ -80,6 +82,10 @@ function toggleRating(rating) {
   filters.minRating = filters.minRating === rating ? null : rating
 }
 
+function toggleFileSize(size) {
+  filters.fileSize = filters.fileSize === size ? null : size
+}
+
 onMounted(() => {
   loadCategories()
   loadBooks()
@@ -89,6 +95,7 @@ onMounted(() => {
 watch(filters, (newFilters) => {
   router.push({
     query: {
+      search: newFilters.search || undefined,
       languages: newFilters.languages.length ? newFilters.languages.join(',') : undefined,
       categories: newFilters.categories.length ? newFilters.categories.join(',') : undefined,
       
@@ -101,6 +108,11 @@ watch(filters, (newFilters) => {
   })
   loadBooks()
 }, { deep: true })
+
+watch(() => route.query.search, (newSearch) => {
+  filters.search = newSearch || ''
+  loadBooks()
+})
 </script>
 
 <template>
@@ -145,7 +157,7 @@ watch(filters, (newFilters) => {
               :key="pill.value"
               class="size-pill"
               :class="{ selected: filters.fileSize === pill.value }"
-              @click="filters.fileSize = pill.value"
+              @click="toggleFileSize(pill.value)"
             >{{ pill.label }}</span>
           </div>
         </div>

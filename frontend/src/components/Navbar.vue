@@ -1,36 +1,52 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { Search, User, BookOpen } from 'lucide-vue-next'
 
-// تعريف واحد فقط للـ router لتفادي أي تكرار
 const router = useRouter()
+const route = useRoute()
 
 const mobileOpen = ref(false)
 const searchQuery = ref('')
-const isLoggedIn = ref(false) // متغير آمن لمراقبة حالة تسجيل الدخول
+const isLoggedIn = ref(false)
+const isAdmin = ref(false)
 
 // التحقق من التوكن عند تحميل المكون
 onMounted(() => {
   checkLoginStatus()
 })
 
-// دالة لتحديث حالة تسجيل الدخول
+// مراقبة مسار الصفحة لتحديث حالة تسجيل الدخول والأدوار تلقائياً عند الانتقال
+watch(() => route.path, () => {
+  checkLoginStatus()
+})
+
+// دالة لتحديث حالة تسجيل الدخول والأدوار
 function checkLoginStatus() {
   const token = localStorage.getItem('auth_token')
   isLoggedIn.value = !!(token && token !== 'undefined' && token !== 'null')
+  
+  if (isLoggedIn.value) {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'))
+      isAdmin.value = user && (user.role === 'admin' || user.role === 'moderator')
+    } catch (e) {
+      console.error("Error parsing user role:", e)
+      isAdmin.value = false
+    }
+  } else {
+    isAdmin.value = false
+  }
 }
 
 // دالة تسجيل الخروج المصححة
 const handleLogout = () => {
-  // 1. حذف التوكن والبيانات
   localStorage.removeItem('auth_token')
   localStorage.removeItem('user')
 
-  // 2. تحديث الحالة فوراً لتختفي الأزرار من الواجهة
   isLoggedIn.value = false
+  isAdmin.value = false
 
-  // 3. توجيه المستخدم لصفحة تسجيل الدخول
   router.push('/login')
 }
 
@@ -85,6 +101,9 @@ function onSearch() {
         </li>
         <li>
           <RouterLink to="/upload" @click="closeMobile">رفع كتاب</RouterLink>
+        </li>
+        <li v-if="isAdmin">
+          <RouterLink to="/admin/books" @click="closeMobile" style="color: #F6C90E;">لوحة الإدارة</RouterLink>
         </li>
       </ul>
 
