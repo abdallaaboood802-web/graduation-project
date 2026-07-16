@@ -12,7 +12,7 @@ Route::get('/books/{book}/download', function (Book $book) {
     // 1. التحقق من حالة الكتاب (فقط المعتمد متاح للعامة، إلا إذا كان الرافع هو نفسه المستخدم أو أدمن)
     $user = auth('sanctum')->user();
 
-    if ($book->status !== 'approved') {
+    if ($book->status->value !== 'approved') {
         $isUploader = $user && $user->id === $book->uploader_id;
         $isAdmin = $user && in_array($user->role, ['admin', 'moderator']);
 
